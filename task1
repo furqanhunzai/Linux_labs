@@ -1,0 +1,152 @@
+
+# Linux LVM Task
+
+The database server called **centos-host** is running short on space.  
+You have been asked to add an LVM volume for the Database team using some of the existing disks on this server.
+
+---
+
+## STEPS
+
+---
+
+### 1. Create a group called **"dba_users"** and add the user called **"bob"** to this group
+
+```bash
+sudo groupadd -g 111 dba_users
+sudo gpasswd -a bob dba_users
+````
+
+Check:
+
+```bash
+getent group dba_users
+```
+
+---
+
+### 2. Install the correct packages that will allow the use of **LVM** on the CentOS machine
+
+Update package cache:
+
+```bash
+sudo yum makecache
+```
+
+Install LVM:
+
+```bash
+sudo yum install -y lvm2
+```
+
+---
+
+### 3. Create a Physical Volume for **/dev/vdd**
+
+```bash
+sudo pvcreate /dev/vdd
+```
+
+---
+
+### 4. Create a Physical Volume for **/dev/vde**
+
+```bash
+sudo pvcreate /dev/vde
+```
+
+---
+
+### 5. Create a Volume Group called **"dba_storage"** using the physical volumes **/dev/vdd** and **/dev/vde**
+
+```bash
+sudo vgcreate dba_storage /dev/vdd /dev/vde
+```
+
+---
+
+### 6. Create an LVM called **"volume_1"** from the volume group **"dba_storage"**
+
+Make use of the entire space available in the volume group.
+
+```bash
+sudo lvcreate -n volume_1 -l 100%FREE dba_storage
+```
+
+---
+
+### 7. Format the LVM volume **"volume_1"** as an **XFS** filesystem
+
+```bash
+sudo mkfs.xfs /dev/dba_storage/volume_1
+```
+
+---
+
+### 8. Mount the filesystem at the path **/mnt/dba_storage**
+
+Check if the directory exists:
+
+```bash
+ls -ld /mnt/dba_storage
+```
+
+If it does not exist:
+
+```bash
+sudo mkdir -p /mnt/dba_storage
+```
+
+Mount the filesystem:
+
+```bash
+sudo mount -t xfs /dev/dba_storage/volume_1 /mnt/dba_storage
+```
+
+---
+
+### 9. Make sure that this mount point is persistent across reboots with the correct default options
+
+Edit the fstab file:
+
+```bash
+sudo nano /etc/fstab
+```
+
+Add the following line:
+
+```text
+/dev/mapper/dba_storage-volume_1 /mnt/dba_storage xfs defaults 0 0
+```
+
+Validate:
+
+```bash
+sudo mount -a
+```
+
+---
+
+### 10. Ensure that the mountpoint **/mnt/dba_storage** has the group ownership set to the **"dba_users"** group
+
+```bash
+sudo chown :dba_users /mnt/dba_storage
+```
+
+---
+
+### 11. Ensure that the mount point **/mnt/dba_storage** has **read/write** and execute permissions for the owner and group and **no permissions for anyone else**
+
+```bash
+sudo chmod 770 /mnt/dba_storage
+```
+
+---
+
+### End
+
+This lab demonstrates how to use **LVM** to solve real-world storage problems on a Linux system.
+
+```
+
+
